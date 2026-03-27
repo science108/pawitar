@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Sparkles, RotateCcw, AlertTriangle } from 'lucide-react';
 import { FileUploader } from './components/FileUploader';
+import { FilePreview } from './components/FilePreview';
 import { DiffViewer } from './components/DiffViewer';
 import { ResultViewer } from './components/ResultViewer';
 import { ProgressBar } from './components/ProgressBar';
@@ -115,6 +116,11 @@ function App() {
             onClear={() => { setRtfFile(null); setRtfText(''); }}
           />
         </section>
+
+        {/* File Preview */}
+        {(templateText || rtfText) && (
+          <FilePreview templateText={templateText} rtfText={rtfText} />
+        )}
 
         {/* Process Button */}
         {canProcess && !result && (
