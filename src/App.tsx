@@ -76,7 +76,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-100 leading-tight">
-                Złoty Awatar ETL
+                Pawitar
               </h1>
               <p className="text-xs text-slate-500">
                 Integrator treści Book Trust
