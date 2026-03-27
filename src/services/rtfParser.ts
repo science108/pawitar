@@ -34,16 +34,90 @@ const WIN1250: Record<number, string> = {
   0xFD: '\u00FD', 0xFE: '\u0163', 0xFF: '\u02D9',
 };
 
-function decodeAnsiChar(hex: string): string {
+const WIN1252: Record<number, string> = {
+  0x80: '\u20AC', 0x82: '\u201A', 0x83: '\u0192', 0x84: '\u201E',
+  0x85: '\u2026', 0x86: '\u2020', 0x87: '\u2021', 0x88: '\u02C6',
+  0x89: '\u2030', 0x8A: '\u0160', 0x8B: '\u2039', 0x8C: '\u0152',
+  0x8E: '\u017D', 0x91: '\u2018', 0x92: '\u2019', 0x93: '\u201C',
+  0x94: '\u201D', 0x95: '\u2022', 0x96: '\u2013', 0x97: '\u2014',
+  0x98: '\u02DC', 0x99: '\u2122', 0x9A: '\u0161', 0x9B: '\u203A',
+  0x9C: '\u0153', 0x9E: '\u017E', 0x9F: '\u0178',
+};
+
+const WIN1257: Record<number, string> = {
+  0x80: '\u20AC', 0x82: '\u201A', 0x84: '\u201E', 0x85: '\u2026',
+  0x86: '\u2020', 0x87: '\u2021', 0x89: '\u2030', 0x8B: '\u2039',
+  0x8D: '\u00A8', 0x8E: '\u02C7', 0x8F: '\u00B8', 0x91: '\u2018',
+  0x92: '\u2019', 0x93: '\u201C', 0x94: '\u201D', 0x95: '\u2022',
+  0x96: '\u2013', 0x97: '\u2014', 0x99: '\u2122', 0x9B: '\u203A',
+  0x9D: '\u00AF', 0x9E: '\u02DB', 0xA0: '\u00A0', 0xA2: '\u00A2',
+  0xA3: '\u00A3', 0xA4: '\u00A4', 0xA6: '\u00A6', 0xA7: '\u00A7',
+  0xA8: '\u00D8', 0xA9: '\u00A9', 0xAA: '\u0156', 0xAB: '\u00AB',
+  0xAC: '\u00AC', 0xAD: '\u00AD', 0xAE: '\u00AE', 0xAF: '\u00C6',
+  0xB0: '\u00B0', 0xB1: '\u00B1', 0xB2: '\u00B2', 0xB3: '\u00B3',
+  0xB4: '\u00B4', 0xB5: '\u00B5', 0xB6: '\u00B6', 0xB7: '\u00B7',
+  0xB8: '\u00F8', 0xB9: '\u00B9', 0xBA: '\u0157', 0xBB: '\u00BB',
+  0xBC: '\u00BC', 0xBD: '\u00BD', 0xBE: '\u00BE', 0xBF: '\u00E6',
+  0xC0: '\u0104', 0xC1: '\u012E', 0xC2: '\u0100', 0xC3: '\u0106',
+  0xC4: '\u00C4', 0xC5: '\u00C5', 0xC6: '\u0118', 0xC7: '\u0112',
+  0xC8: '\u010C', 0xC9: '\u00C9', 0xCA: '\u0179', 0xCB: '\u0116',
+  0xCC: '\u0122', 0xCD: '\u0136', 0xCE: '\u012A', 0xCF: '\u013B',
+  0xD0: '\u0160', 0xD1: '\u0143', 0xD2: '\u0145', 0xD3: '\u00D3',
+  0xD4: '\u014C', 0xD5: '\u00D5', 0xD6: '\u00D6', 0xD7: '\u00D7',
+  0xD8: '\u0172', 0xD9: '\u0141', 0xDA: '\u015A', 0xDB: '\u016A',
+  0xDC: '\u00DC', 0xDD: '\u017B', 0xDE: '\u017D', 0xDF: '\u00DF',
+  0xE0: '\u0105', 0xE1: '\u012F', 0xE2: '\u0101', 0xE3: '\u0107',
+  0xE4: '\u00E4', 0xE5: '\u00E5', 0xE6: '\u0119', 0xE7: '\u0113',
+  0xE8: '\u010D', 0xE9: '\u00E9', 0xEA: '\u017A', 0xEB: '\u0117',
+  0xEC: '\u0123', 0xED: '\u0137', 0xEE: '\u012B', 0xEF: '\u013C',
+  0xF0: '\u0161', 0xF1: '\u0144', 0xF2: '\u0146', 0xF3: '\u00F3',
+  0xF4: '\u014D', 0xF5: '\u00F5', 0xF6: '\u00F6', 0xF7: '\u00F7',
+  0xF8: '\u0173', 0xF9: '\u0142', 0xFA: '\u015B', 0xFB: '\u016B',
+  0xFC: '\u00FC', 0xFD: '\u017C', 0xFE: '\u017E', 0xFF: '\u02D9',
+};
+
+const CHARSET_CODEPAGE: Record<number, Record<number, string>> = {
+  0: WIN1252,
+  186: WIN1257,
+  238: WIN1250,
+};
+
+const ANSICPG_TO_TABLE: Record<number, Record<number, string>> = {
+  1250: WIN1250,
+  1252: WIN1252,
+  1257: WIN1257,
+};
+
+function extractFontCharsets(rtf: string): Map<number, number> {
+  const map = new Map<number, number>();
+  const re = /\{\\f(\d+)[^}]*\\fcharset(\d+)/g;
+  let m;
+  while ((m = re.exec(rtf)) !== null) {
+    map.set(parseInt(m[1], 10), parseInt(m[2], 10));
+  }
+  return map;
+}
+
+function extractDefaultCpTable(rtf: string): Record<number, string> {
+  const m = rtf.match(/\\ansicpg(\d+)/);
+  if (m) {
+    const cpNum = parseInt(m[1], 10);
+    if (ANSICPG_TO_TABLE[cpNum]) return ANSICPG_TO_TABLE[cpNum];
+  }
+  return WIN1250;
+}
+
+function decodeAnsiChar(hex: string, cpTable: Record<number, string>): string {
   const code = parseInt(hex, 16);
   if (code < 0x80) return String.fromCharCode(code);
-  return WIN1250[code] ?? String.fromCharCode(code);
+  return cpTable[code] ?? String.fromCharCode(code);
 }
 
 interface ParserState {
   bold: boolean;
   italic: boolean;
   ucSkip: number;
+  currentFont: number;
   inHeader: boolean;
   groupDepth: number;
   headerGroupDepth: number;
@@ -54,10 +128,14 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
   let currentText = '';
   let currentBold = false;
 
+  const fontCharsets = extractFontCharsets(rtfContent);
+  const defaultCpTable = extractDefaultCpTable(rtfContent);
+
   const state: ParserState = {
     bold: false,
     italic: false,
     ucSkip: 1,
+    currentFont: 0,
     inHeader: false,
     groupDepth: 0,
     headerGroupDepth: 0,
@@ -103,6 +181,7 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
         state.bold = prev.bold;
         state.italic = prev.italic;
         state.ucSkip = prev.ucSkip;
+        state.currentFont = prev.currentFont;
         state.groupDepth = prev.groupDepth;
         if (!state.inHeader && prev.inHeader) {
           state.inHeader = prev.inHeader;
@@ -131,10 +210,12 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
         continue;
       }
 
-      // ANSI escape \'XX
+      // ANSI escape \'XX — decode using font-aware codepage
       if (nextCh === '\'') {
         const hex = rtfContent.substring(i + 1, i + 3);
-        currentText += decodeAnsiChar(hex);
+        const charset = fontCharsets.get(state.currentFont);
+        const cpTable = (charset !== undefined && CHARSET_CODEPAGE[charset]) || defaultCpTable;
+        currentText += decodeAnsiChar(hex, cpTable);
         i += 3;
         continue;
       }
@@ -242,6 +323,7 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
           state.ucSkip = numParam ?? 1;
           break;
         case 'f':
+          if (numParam !== undefined) state.currentFont = numParam;
           break;
         case 'tab':
           currentText += '\t';
