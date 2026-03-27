@@ -81,9 +81,12 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
       stateStack.push({ ...state });
       state.groupDepth++;
 
-      // Detect header groups like {\info, {\fonttbl, {\colortbl, {\*\expandedcolortbl
       const ahead = rtfContent.substring(i + 1, i + 30);
-      if (ahead.match(/^\\(?:\*\\)?(?:info|fonttbl|colortbl|expandedcolortbl|stylesheet)/)) {
+      // Skip ALL {\*\...} ignorable destinations (bookmarks, lists, rsid tables, etc.)
+      if (ahead.startsWith('\\*')) {
+        state.inHeader = true;
+        state.headerGroupDepth = state.groupDepth;
+      } else if (ahead.match(/^\\(?:info|fonttbl|colortbl|stylesheet)/)) {
         state.inHeader = true;
         state.headerGroupDepth = state.groupDepth;
       }
@@ -136,6 +139,32 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
         continue;
       }
 
+      // \<newline> treated as \par per RTF spec
+      if (nextCh === '\r' || nextCh === '\n') {
+        if (nextCh === '\r' && i + 1 < rtfContent.length && rtfContent[i + 1] === '\n') {
+          i++;
+        }
+        i++;
+        flushParagraph();
+        continue;
+      }
+
+      // Special symbol chars: \~ \- \_
+      if (nextCh === '~') {
+        currentText += ' ';
+        i++;
+        continue;
+      }
+      if (nextCh === '-') {
+        i++;
+        continue;
+      }
+      if (nextCh === '_') {
+        currentText += '-';
+        i++;
+        continue;
+      }
+
       // Control word
       let word = '';
       while (i < rtfContent.length && /[a-zA-Z]/.test(rtfContent[i])) {
@@ -177,6 +206,11 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
         case 'i':
           state.italic = numParam !== 0;
           break;
+        case 'plain':
+          state.bold = false;
+          state.italic = false;
+          currentBold = false;
+          break;
         case 'u': {
           if (numParam !== undefined) {
             // Handle negative unicode values
@@ -189,9 +223,14 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
             } else {
               currentText += String.fromCodePoint(codePoint);
             }
-            // Skip uc replacement characters
+            // Skip uc replacement characters (\'XX counts as 1 char)
             let skip = state.ucSkip;
             while (skip > 0 && i < rtfContent.length) {
+              if (rtfContent[i] === '\\' && i + 1 < rtfContent.length && rtfContent[i + 1] === '\'') {
+                i += 4;
+                skip--;
+                continue;
+              }
               if (rtfContent[i] === '\\' || rtfContent[i] === '{' || rtfContent[i] === '}') break;
               i++;
               skip--;
@@ -203,24 +242,31 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
           state.ucSkip = numParam ?? 1;
           break;
         case 'f':
-          // Font switch: f1/f3 = bold, f4/f5 = italic, f0/f2 = roman
-          if (numParam === 1 || numParam === 3) {
-            state.bold = true;
-            currentBold = true;
-          } else if (numParam === 4 || numParam === 5) {
-            state.italic = true;
-          } else {
-            state.italic = false;
-            if (numParam === 0 || numParam === 2) {
-              state.bold = false;
-              currentBold = false;
-            }
-          }
           break;
         case 'tab':
           currentText += '\t';
           break;
-        // Ignore formatting control words
+        case 'endash':
+          currentText += '\u2013';
+          break;
+        case 'emdash':
+          currentText += '\u2014';
+          break;
+        case 'lquote':
+          currentText += '\u2018';
+          break;
+        case 'rquote':
+          currentText += '\u2019';
+          break;
+        case 'ldblquote':
+          currentText += '\u201C';
+          break;
+        case 'rdblquote':
+          currentText += '\u201D';
+          break;
+        case 'bullet':
+          currentText += '\u2022';
+          break;
         default:
           break;
       }
