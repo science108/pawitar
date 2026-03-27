@@ -7,9 +7,11 @@ export function stripFormattingCodes(text: string): string {
   // 1. Join words broken across lines by <-> or <&> continuation codes
   result = result.replace(/<->\s*\n\s*/g, '');
   result = result.replace(/<&>\s*\n\s*/g, '');
-  // 2. Strip ALL remaining formatting codes generically (matches patchEngine's findWordPositions)
+  // 2. Replace space-like codes with actual spaces before generic strip
+  result = result.replace(/<~>/g, ' ');
+  // 3. Strip ALL remaining formatting codes generically (matches patchEngine's findWordPositions)
   result = result.replace(/<[^>]+>/g, '');
-  // 3. Normalize whitespace
+  // 4. Normalize whitespace
   result = result.replace(/\n/g, ' ');
   result = result.replace(/\s+/g, ' ').trim();
   return result;

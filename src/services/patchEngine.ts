@@ -101,7 +101,10 @@ function findWordPositions(content: string): WordPosition[] {
     while (i < content.length) {
       const codeAtPos = content.substring(i).match(/^<(?:[^>]+)>/);
       if (codeAtPos) {
-        // Check if it's a soft hyphen followed by newline (word continuation)
+        if (content.substring(i).startsWith('<~>')) {
+          i += 3;
+          break;
+        }
         if (content.substring(i).startsWith('<->')) {
           const afterHyphen = content.substring(i + 3);
           const nlMatch = afterHyphen.match(/^\s*\n\s*/);

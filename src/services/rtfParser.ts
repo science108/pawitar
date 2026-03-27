@@ -307,6 +307,10 @@ export function parseRtf(rtfContent: string): RtfParagraph[] {
             // Skip uc replacement characters (\'XX counts as 1 char)
             let skip = state.ucSkip;
             while (skip > 0 && i < rtfContent.length) {
+              if (rtfContent[i] === '\r' || rtfContent[i] === '\n') {
+                i++;
+                continue;
+              }
               if (rtfContent[i] === '\\' && i + 1 < rtfContent.length && rtfContent[i + 1] === '\'') {
                 i += 4;
                 skip--;
