@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ETLPage } from './pages/ETLPage';
-import { PlaceholderPage } from './pages/PlaceholderPage';
+import { DiacriticsPage } from './pages/DiacriticsPage';
 
 function App() {
   const [activeTab, setActiveTab] = useState('etl');
@@ -19,7 +19,7 @@ function App() {
       <div className="flex-1 flex flex-col min-w-0">
         <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-8">
           {activeTab === 'etl' && <ETLPage />}
-          {activeTab === 'new' && <PlaceholderPage />}
+          {activeTab === 'diacritics' && <DiacriticsPage />}
         </main>
 
         <footer className="border-t border-slate-800">

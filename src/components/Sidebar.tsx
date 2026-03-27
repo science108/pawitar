@@ -1,4 +1,4 @@
-import { Sparkles, GitMerge, Puzzle, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Sparkles, GitMerge, Languages, PanelLeftClose, PanelLeft } from 'lucide-react';
 
 export interface NavItem {
   id: string;
@@ -8,7 +8,7 @@ export interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'etl', label: 'Scalanie tekstu', icon: <GitMerge className="h-5 w-5" /> },
-  { id: 'new', label: 'Nowa funkcja', icon: <Puzzle className="h-5 w-5" /> },
+  { id: 'diacritics', label: 'Weryfikacja diakrytyków', icon: <Languages className="h-5 w-5" /> },
 ];
 
 interface Props {
