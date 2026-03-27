@@ -2,26 +2,14 @@ import type { TemplateBlock, VerseSection } from '../types';
 
 const TAG_REGEX = /^@([\w-]+)\s*=\s*/;
 
-const FORMATTING_CODES = [
-  /<MI>/g, /<D>/g, /<R>/g, /<->[\r\n]*/g,
-  /<~>/g, /<&>[\r\n]*/g, /<k0>/g, /<qc>/g,
-  /<_qm>/g, /<\/_qm>/g,
-  /<_q>/g, /<\/_q>/g,
-  /<_bt>/g, /<\/_bt>/g,
-  /<_dt>/g, /<\/_dt>/g,
-  /<_dd>/g, /<\/_dd>/g,
-  /<_>/g,
-  /<P\d*>/g, /<%\d+>/g,
-  /<\d+>/g,
-  /<MI>,<D>/g,
-];
-
 export function stripFormattingCodes(text: string): string {
   let result = text;
-  for (const re of FORMATTING_CODES) {
-    result = result.replace(re, '');
-  }
-  // Join lines broken by <-> (soft hyphen continuation)
+  // 1. Join words broken across lines by <-> or <&> continuation codes
+  result = result.replace(/<->\s*\n\s*/g, '');
+  result = result.replace(/<&>\s*\n\s*/g, '');
+  // 2. Strip ALL remaining formatting codes generically (matches patchEngine's findWordPositions)
+  result = result.replace(/<[^>]+>/g, '');
+  // 3. Normalize whitespace
   result = result.replace(/\n/g, ' ');
   result = result.replace(/\s+/g, ' ').trim();
   return result;

@@ -46,11 +46,9 @@ export function applyPatch(
       for (let i = 0; i < op.words.length; i++) {
         if (wordIdx < wordPositions.length) {
           const wp = wordPositions[wordIdx];
-          // Collect formatting codes before this word, skip the word itself
           const between = content.substring(lastEnd, wp.start);
-          // Keep formatting codes from between, but skip whitespace
           const codes = extractFormattingCodes(between);
-          if (codes && i === 0) {
+          if (codes) {
             result += codes;
           }
           lastEnd = wp.end;
