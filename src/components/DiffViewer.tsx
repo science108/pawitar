@@ -17,6 +17,7 @@ const TAG_LABELS: Record<string, string> = {
 };
 
 export function DiffViewer({ diffs, onToggleDiff }: Props) {
+  const [listOpen, setListOpen] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
   if (diffs.length === 0) {
@@ -27,25 +28,40 @@ export function DiffViewer({ diffs, onToggleDiff }: Props) {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-sm text-slate-400 px-1">
-        <span>Znaleziono {diffs.length} {pluralize(diffs.length, 'zmianę', 'zmiany', 'zmian')}</span>
-        <span>{diffs.filter(d => d.enabled).length} zaznaczonych</span>
-      </div>
+  const enabledCount = diffs.filter(d => d.enabled).length;
 
-      <div className="flex flex-col gap-1">
-        {diffs.map((diff, idx) => (
-          <DiffItem
-            key={idx}
-            diff={diff}
-            index={idx}
-            isExpanded={expandedIdx === idx}
-            onToggleExpand={() => setExpandedIdx(expandedIdx === idx ? null : idx)}
-            onToggleEnabled={() => onToggleDiff(idx)}
-          />
-        ))}
-      </div>
+  return (
+    <div className="rounded-xl border border-slate-700/50 bg-slate-900/50 overflow-hidden">
+      <button
+        onClick={() => setListOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-800/50 transition-colors"
+      >
+        {listOpen
+          ? <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />
+          : <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+        }
+        <span className="text-sm font-medium text-slate-200">
+          Znaleziono {diffs.length} {pluralize(diffs.length, 'zmianę', 'zmiany', 'zmian')}
+        </span>
+        <span className="ml-auto text-xs text-slate-500">
+          {enabledCount} / {diffs.length} zaznaczonych
+        </span>
+      </button>
+
+      {listOpen && (
+        <div className="border-t border-slate-700/50 px-3 py-2 flex flex-col gap-1 max-h-[70vh] overflow-y-auto">
+          {diffs.map((diff, idx) => (
+            <DiffItem
+              key={idx}
+              diff={diff}
+              index={idx}
+              isExpanded={expandedIdx === idx}
+              onToggleExpand={() => setExpandedIdx(expandedIdx === idx ? null : idx)}
+              onToggleEnabled={() => onToggleDiff(idx)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
