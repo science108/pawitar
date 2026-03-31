@@ -6,6 +6,7 @@ import { DiffViewer } from '../components/DiffViewer';
 import { ResultViewer } from '../components/ResultViewer';
 import { ProgressBar } from '../components/ProgressBar';
 import { useETLProcessor } from '../hooks/useETLProcessor';
+import { readFileText } from '../utils/readFileText';
 import type { SectionDiff } from '../types';
 
 export function ETLPage() {
@@ -19,12 +20,12 @@ export function ETLPage() {
 
   const handleTemplateSelect = useCallback((file: File) => {
     setTemplateFile(file);
-    file.text().then(setTemplateText);
+    readFileText(file).then(setTemplateText);
   }, []);
 
   const handleRtfSelect = useCallback((file: File) => {
     setRtfFile(file);
-    file.text().then(setRtfText);
+    readFileText(file).then(setRtfText);
   }, []);
 
   const handleProcess = useCallback(() => {
