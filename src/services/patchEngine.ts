@@ -71,10 +71,7 @@ export function applyPatch(
     result += content.substring(lastEnd);
   }
 
-  // Re-wrap lines to approximately the original line width
-  const rewrapped = rewrapContent(prefix + result, getLineWidth(rawLines));
-
-  return rewrapped.split('\n');
+  return (prefix + result).split('\n');
 }
 
 function findWordPositions(content: string): WordPosition[] {
@@ -86,6 +83,13 @@ function findWordPositions(content: string): WordPosition[] {
     const codeMatch = content.substring(i).match(/^<(?:[^>]+)>/);
     if (codeMatch) {
       i += codeMatch[0].length;
+      continue;
+    }
+
+    // Skip square-bracketed editorial notes (treated like formatting codes)
+    const bracketMatch = content.substring(i).match(/^\[[^\]]*\]/);
+    if (bracketMatch) {
+      i += bracketMatch[0].length;
       continue;
     }
 
@@ -134,83 +138,10 @@ function findWordPositions(content: string): WordPosition[] {
 function extractFormattingCodes(text: string): string {
   const codes: string[] = [];
   let match;
-  const re = /<(?:[^>]+)>/g;
+  const re = /<(?:[^>]+)>|\[[^\]]*\]/g;
   while ((match = re.exec(text)) !== null) {
     codes.push(match[0]);
   }
   return codes.join('');
 }
 
-function getLineWidth(lines: string[]): number {
-  if (lines.length === 0) return 72;
-  // Measure the longest line (excluding the first line which has the tag prefix)
-  let maxLen = 0;
-  for (const line of lines) {
-    const stripped = line.replace(/<[^>]+>/g, '').replace(/^@[\w-]+\s*=\s*/, '');
-    if (stripped.length > maxLen) maxLen = stripped.length;
-  }
-  return Math.max(maxLen, 60);
-}
-
-function rewrapContent(text: string, targetWidth: number): string {
-  const lines = text.split('\n');
-  const result: string[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const visibleLen = line.replace(/<[^>]+>/g, '').length;
-
-    if (visibleLen <= targetWidth + 5) {
-      result.push(line);
-    } else {
-      // Line is too long, need to wrap
-      const wrapped = wrapLine(line, targetWidth);
-      result.push(...wrapped);
-    }
-  }
-
-  return result.join('\n');
-}
-
-function wrapLine(line: string, targetWidth: number): string[] {
-  const results: string[] = [];
-  let current = '';
-  let currentVisible = 0;
-
-  const parts = line.split(/(\s+|<[^>]+>)/);
-
-  for (const part of parts) {
-    if (part.match(/^<[^>]+>$/)) {
-      current += part;
-      continue;
-    }
-
-    const partVisible = part.replace(/<[^>]+>/g, '').length;
-
-    if (currentVisible + partVisible > targetWidth && currentVisible > 0 && part.trim()) {
-      // Find a good break point in the last word
-      const lastWord = part.trim();
-      if (lastWord.length > 3) {
-        // Break the word with <->
-        const breakAt = Math.max(2, lastWord.length - 3);
-        current += lastWord.substring(0, breakAt) + '<->';
-        results.push(current);
-        current = lastWord.substring(breakAt);
-        currentVisible = current.replace(/<[^>]+>/g, '').length;
-      } else {
-        results.push(current.trimEnd());
-        current = part;
-        currentVisible = partVisible;
-      }
-    } else {
-      current += part;
-      currentVisible += partVisible;
-    }
-  }
-
-  if (current) {
-    results.push(current);
-  }
-
-  return results;
-}
