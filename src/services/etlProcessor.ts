@@ -66,9 +66,10 @@ export async function processETL(
 
     const { block, rtfText: correctedText } = matchedPairs[i];
     const oldText = block.pureText;
+    const correctedTextClean = correctedText.replace(/\[[^\]]*\]/g, '');
 
-    if (hasChanges(oldText, correctedText)) {
-      const operations = diffWords(oldText, correctedText);
+    if (hasChanges(oldText, correctedTextClean)) {
+      const operations = diffWords(oldText, correctedTextClean);
 
       const verseSection = templateSections.find(s =>
         s.blocks.includes(block)
